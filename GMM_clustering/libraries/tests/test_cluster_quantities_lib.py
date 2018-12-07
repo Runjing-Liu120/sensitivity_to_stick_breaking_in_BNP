@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.insert(0, '../')
+sys.path.insert(0, '../libraries')
 
 import autograd.numpy as np
 import autograd.scipy as sp

@@ -10,6 +10,7 @@ from copy import deepcopy
 
 import modeling_lib as modeling_lib
 import functional_sensitivity_lib as fun_sens_lib
+import cluster_quantities_lib as cluster_lib
 
 import paragami
 
@@ -94,7 +95,7 @@ def get_default_prior_params(dim):
     prior_params_paragami = paragami.PatternDict()
 
     # DP prior parameter
-    prior_params_dict['alpha'] = np.array([4.0])
+    prior_params_dict['alpha'] = np.array([3.0])
     prior_params_paragami['alpha'] = \
         paragami.NumericArrayPattern(shape=(1, ), lb = 0.0)
 
@@ -671,13 +672,13 @@ def get_e_num_pred_clusters_from_vb_free_params(vb_params_paragami,
                                                     n_samples = 100000):
     # get posterior predicted number of clusters
 
-    _, vb_params_dict = \
-        get_moments_from_vb_free_params(vb_params_paragami, vb_params_free)
+    vb_params_dict = \
+        vb_params_paragami.fold(vb_params_free, free = True)
 
     mu = vb_params_dict['stick_propn_mean']
     sigma = 1 / np.sqrt(vb_params_dict['stick_propn_info'])
 
-    return modeling_lib.get_e_number_clusters_from_logit_sticks(mu, sigma,
+    return cluster_lib.get_e_number_clusters_from_logit_sticks(mu, sigma,
                                                         n_obs,
                                                         threshold = threshold,
                                                         n_samples = n_samples)
@@ -689,12 +690,12 @@ def get_e_num_clusters_from_free_par(y, vb_params_paragami, vb_params_free,
                                         threshold = 0,
                                         n_samples = 100000):
 
-    _, vb_params_dict = \
-        get_moments_from_vb_free_params(vb_params_paragami, vb_params_free)
+    vb_params_dict = \
+        vb_params_paragami.fold(vb_params_free, free = True)
 
     e_z  = get_optimal_z_from_vb_params_dict(y, vb_params_dict, gh_loc, gh_weights,
                                             use_bnp_prior = True)
 
-    return modeling_lib.get_e_num_large_clusters_from_ez(e_z,
+    return cluster_lib.get_e_num_large_clusters_from_ez(e_z,
                                         threshold = threshold,
                                         n_samples = 100000)

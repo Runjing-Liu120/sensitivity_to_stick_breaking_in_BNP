@@ -84,7 +84,7 @@ def get_e_number_clusters_from_logit_sticks(stick_propn_mean, stick_propn_info,
 
     n_sticks = len(stick_propn_mean)
 
-    assert (n_samples is not None) & (unv_norm_samples is not None), \
+    assert (n_samples is not None) or (unv_norm_samples is not None), \
         'both n_samples and unv_norm_samples cannot be None'
 
     if unv_norm_samples is None:
@@ -94,7 +94,7 @@ def get_e_number_clusters_from_logit_sticks(stick_propn_mean, stick_propn_info,
 
     # sample sticks proportions from logitnormal
     stick_propn_samples = sp.special.expit(unv_norm_samples * \
-                            1 / sqrt(stick_propn_info) + stick_propn_mean)
+                            1 / np.sqrt(stick_propn_info) + stick_propn_mean)
 
     # get posterior weights
     weight_samples = \
