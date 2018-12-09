@@ -54,9 +54,6 @@ class PriorPerturbation(object):
         else:
             return -1 * e_perturbation_vec
 
-    # def get_perturbed_kl(self):
-    #     return self.get_e_log_perturbation() + self.model.set_z_get_kl()
-
     #################
     # Functions that are used for graphing and the influence function.
 
