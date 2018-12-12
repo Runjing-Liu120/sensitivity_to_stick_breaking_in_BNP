@@ -15,7 +15,8 @@ import paragami
 ##########################
 def cluster_and_get_k_means_inits(y, vb_params_paragami,
                                 n_kmeans_init = 1,
-                                z_init_eps=0.05):
+                                z_init_eps=0.05,
+                                seed = 1):
     """
     Runs k-means to initialize the variational parameters.
 
@@ -44,6 +45,9 @@ def cluster_and_get_k_means_inits(y, vb_params_paragami,
     # get dictionary of vb parameters
     vb_params_dict = vb_params_paragami.random()
 
+    # set seed
+    np.random.seed(seed)
+
     # data parameters
     k_approx = np.shape(vb_params_dict['centroids'])[1]
     n_obs = np.shape(y)[0]
@@ -71,23 +75,23 @@ def cluster_and_get_k_means_inits(y, vb_params_paragami,
     vb_params_dict['stick_propn_info'] = np.ones(k_approx - 1)
 
     # Set inital covariances
-    # gamma_init = np.zeros((k_approx, dim, dim))
-    # for k in range(k_approx):
-    #     indx = np.argwhere(km_best.labels_ == k).flatten()
-    #
-    #     if len(indx) == 1:
-    #         # if there's only one datapoint in the cluster,
-    #         # the covariance is not defined.
-    #         gamma_init[k, :, :] = np.eye(dim)
-    #     else:
-    #         resid_k = y[indx, :] - km_best.cluster_centers_[k, :]
-    #         gamma_init_ = np.linalg.inv(np.cov(resid_k.T) + \
-    #                                 np.eye(dim) * 1e-4)
-    #         # symmetrize ... there might be some numerical issues otherwise
-    #         gamma_init[k, :, :] = 0.5 * (gamma_init_ + gamma_init_.T)
+    gamma_init = np.zeros((k_approx, dim, dim))
+    for k in range(k_approx):
+        indx = np.argwhere(km_best.labels_ == k).flatten()
 
-    # vb_params_dict['gamma'] = gamma_init
+        if len(indx == 1):
+            # if there's only one datapoint in the cluster,
+            # the covariance is not defined.
+            gamma_init[k, :, :] = np.eye(dim)
+        else:
+            resid_k = y[indx, :] - km_best.cluster_centers_[k, :]
+            gamma_init_ = np.linalg.inv(np.cov(resid_k.T) + \
+                                    np.eye(dim) * 1e-4)
+            # symmetrize ... there might be some numerical issues otherwise
+            gamma_init[k, :, :] = 0.5 * (gamma_init_ + gamma_init_.T)
 
+    vb_params_dict['gamma'] = gamma_init
+    
     init_free_par = vb_params_paragami.flatten(vb_params_dict, free = True)
 
     return init_free_par, vb_params_dict, e_z_init
