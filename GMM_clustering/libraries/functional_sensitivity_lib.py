@@ -36,25 +36,6 @@ class PriorPerturbation(object):
         self.set_log_phi(log_phi)
 
     #################
-    # Functions that are used for optimization and sensitivity.
-    def get_e_log_perturbation(self, epsilon, sum_vector=True):
-        if self.gustafson_style:
-            perturbation_fun = \
-                lambda logit_v: \
-                    (1 + epsilon * np.exp(self.log_phi(logit_v)))
-        else:
-            perturbation_fun = \
-                lambda logit_v: self.log_phi(logit_v) * epsilon
-
-        e_perturbation_vec = model_lib.get_e_func_logit_stick_vec(
-            self.vb_params_dict, self.gh_loc, self.gh_weights, perturbation_fun)
-
-        if sum_vector:
-            return -1 * np.sum(e_perturbation_vec)
-        else:
-            return -1 * e_perturbation_vec
-
-    #################
     # Functions that are used for graphing and the influence function.
 
     # The log variational density of stick k at logit_v
@@ -160,3 +141,45 @@ class PriorPerturbation(object):
             self.logit_v_lb, self.logit_v_ub, maxiter = self.quad_maxiter)
         assert norm_pc_logit > 0
         self.log_norm_pc_logit = np.log(norm_pc_logit)
+
+
+def get_e_log_perturbation(log_phi, vb_params_dict, epsilon_param_dict,
+                           gh_loc, gh_weights, sum_vector=True):
+
+    """
+    Computes the expected log multiplicative perturbation
+
+    Parameters
+    ----------
+    log_phi : Callable function
+        The log of the multiplicative perturbation in logit space
+    vb_params_dict : dictionary
+        A dictionary that contains the variational parameters
+    epsilon_param_dict : dictionary
+        Dictionary with key 'epsilon' specififying the multiplicative perturbation
+    gh_loc : vector
+        Locations for gauss-hermite quadrature. We need this compute the
+        expected prior terms.
+    gh_weights : vector
+        Weights for gauss-hermite quadrature. We need this compute the
+        expected prior terms.
+    sum_vector : boolean
+        whether to sum the expectation over the k sticks
+
+    Returns
+    -------
+    float
+        The expected log perturbation under the variational distribution
+
+    """
+
+    perturbation_fun = \
+        lambda logit_v: log_phi(logit_v) * epsilon_param_dict['epsilon']
+
+    e_perturbation_vec = modeling_lib.get_e_func_logit_stick_vec(
+        vb_params_dict, gh_loc, gh_weights, perturbation_fun)
+
+    if sum_vector:
+        return -1 * np.sum(e_perturbation_vec)
+    else:
+        return -1 * e_perturbation_vec
