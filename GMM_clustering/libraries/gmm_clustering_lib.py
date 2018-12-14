@@ -137,7 +137,7 @@ def get_e_log_prior(stick_propn_mean, stick_propn_info, centroids, gamma,
     prior_info = prior_params_dict['prior_centroid_info']
     e_centroid_prior = \
         modeling_lib.get_e_centroid_prior(centroids, prior_mean, prior_info)
-    
+
     return np.squeeze(e_gamma_prior + e_centroid_prior + dp_prior)
 
 ##########################
@@ -387,7 +387,8 @@ def get_e_num_pred_clusters_from_vb_free_params(vb_params_paragami,
 def get_e_num_clusters_from_free_par(y, vb_params_paragami, vb_params_free,
                                         gh_loc, gh_weights,
                                         threshold = 0,
-                                        n_samples = 100000):
+                                        n_samples = 100000,
+                                        unif_samples = None):
 
     vb_params_dict = \
         vb_params_paragami.fold(vb_params_free, free = True)
@@ -397,4 +398,5 @@ def get_e_num_clusters_from_free_par(y, vb_params_paragami, vb_params_free,
 
     return cluster_lib.get_e_num_large_clusters_from_ez(e_z,
                                         threshold = threshold,
-                                        n_samples = 100000)
+                                        n_samples = n_samples,
+                                        unif_samples = unif_samples)
