@@ -122,7 +122,6 @@ def get_e_logitnorm_dp_prior(stick_propn_mean, stick_propn_info, alpha,
 
 ##############
 # likelihoods
-
 def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
                                         gh_loc, gh_weights):
 

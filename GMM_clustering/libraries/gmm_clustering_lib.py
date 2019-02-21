@@ -2,9 +2,10 @@ import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
 
-import modeling_lib as modeling_lib
-import functional_sensitivity_lib as fun_sens_lib
+import sys
+sys.path.insert(0, '../../BNP_modeling/')
 import cluster_quantities_lib as cluster_lib
+import modeling_lib
 
 import paragami
 
@@ -49,7 +50,7 @@ def get_vb_params_paragami_object(dim, k_approx):
 
     # cluster covariances
     vb_params_paragami['gamma'] = \
-        paragami.pattern_containers.PatternArray(shape = (k_approx, ), \
+        paragami.pattern_containers.PatternArray(array_shape = (k_approx, ), \
                     base_pattern = paragami.PSDSymmetricMatrixPattern(size=dim))
 
     vb_params_dict = vb_params_paragami.random()
