@@ -126,10 +126,15 @@ def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
                                         gh_loc, gh_weights):
 
     # the expected log mixture weights
+    # stick_propn_mean is of shape ... x k_approx
 
     assert np.all(gh_weights > 0)
 
-    assert len(stick_propn_mean) == len(stick_propn_info)
+    assert stick_propn_mean.shape == stick_propn_info.shape
+    if len(stick_propn_mean.shape) == 1:
+        stick_propn_mean = stick_propn_mean[:, None]
+        stick_propn_info = stick_propn_info[:, None]
+
     assert np.all(stick_propn_info) > 0
 
     e_log_v, e_log_1mv = \
@@ -139,10 +144,13 @@ def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
             gh_loc = gh_loc,
             gh_weights = gh_weights)
 
-    e_log_stick_remain = np.concatenate([np.array([0.]), np.cumsum(e_log_1mv)])
-    e_log_new_stick = np.concatenate((e_log_v, np.array([0])))
+    zeros_shape = stick_propn_mean.shape[0:-1] + (1,)
 
-    return e_log_stick_remain + e_log_new_stick
+    e_log_stick_remain = np.concatenate([np.zeros(zeros_shape), \
+                                        np.cumsum(e_log_1mv, axis = -1)], axis = -1)
+    e_log_new_stick = np.concatenate((e_log_v, np.zeros(zeros_shape)), axis = -1)
+
+    return (e_log_stick_remain + e_log_new_stick).squeeze()
 
 
 def loglik_ind(stick_propn_mean, stick_propn_info, e_z, gh_loc, gh_weights):
@@ -161,3 +169,25 @@ def loglik_ind(stick_propn_mean, stick_propn_info, e_z, gh_loc, gh_weights):
                                         gh_loc, gh_weights)
 
     return np.sum(e_z * e_log_cluster_probs)
+
+
+def get_e_beta(tau):
+    # tau should have shape (..., 2). The last dimensions are the
+    # beta parameters
+    assert tau.shape[-1] == 2
+
+    sum_alpha_beta = np.sum(tau, axis = -1)
+
+    return tau[..., 0] / sum_alpha_beta
+
+def get_e_log_beta(tau):
+    # tau should have shape (..., 2). The last dimensions are the
+    # beta parameters
+    assert tau.shape[-1] == 2
+
+    digamma_alpha = sp.special.digamma(tau[..., 0])
+    digamma_beta = sp.special.digamma(tau[..., 1])
+
+    digamma_alpha_beta = sp.special.digamma(np.sum(tau, axis = -1))
+
+    return digamma_alpha - digamma_alpha_beta, digamma_beta - digamma_alpha_beta
