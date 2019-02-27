@@ -132,8 +132,8 @@ def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
 
     assert stick_propn_mean.shape == stick_propn_info.shape
     if len(stick_propn_mean.shape) == 1:
-        stick_propn_mean = stick_propn_mean[:, None]
-        stick_propn_info = stick_propn_info[:, None]
+        stick_propn_mean = stick_propn_mean[None, :]
+        stick_propn_info = stick_propn_info[None, :]
 
     assert np.all(stick_propn_info) > 0
 
@@ -160,9 +160,7 @@ def loglik_ind(stick_propn_mean, stick_propn_info, e_z, gh_loc, gh_weights):
     assert np.all(gh_weights > 0)
 
     assert stick_propn_mean.shape == stick_propn_info.shape
-    assert e_z.shape[0:-1] == stick_propn_info.shape[0:-1]
-    assert e_z.shape[-1] == stick_propn_info.shape[-1] + 1
-    
+
     assert np.all(stick_propn_info) > 0
 
 
