@@ -56,6 +56,25 @@ def get_e_cluster_probabilities(stick_propn_mean, stick_propn_info,
     return get_mixture_weights_from_stick_break_propns(e_cluster_probs)
 
 def get_stick_break_propns_from_mixture_weights(mixture_weights):
+    """
+    Computes stick breaking proportions from the mixture weights. Used
+    for initializing vb parameters
+
+    Parameters
+    ----------
+    stick_break_propns : ndarray
+        Array of stick breaking proportions, with sticks along last dimension
+
+    Returns
+    -------
+    stick_break_propns : ndarray
+        Array of stick breaking proportions, with sticks along last dimension
+    """
+
+    # TODO: implement for more general array shapes
+    if not len(np.shape(mixture_weights)) == 2:
+        raise NotImplementedError
+
     n_obs = mixture_weights.shape[0]
     k_approx = mixture_weights.shape[1]
 
@@ -228,11 +247,12 @@ def get_e_num_large_clusters_from_ez(e_z,
 
     num_heavy_clusters_vec = np.zeros(n_samples)
 
-    # z_sample is a n_obs x n_samples matrix of cluster belongings
+    # z_sample is a obs_shape x n_samples matrix of cluster belongings
     z_sample = _get_clusters_from_ez_and_unif_samples(e_z_cumsum, unif_samples)
 
     for i in range(n_clusters):
         # get number of clusters with at least enough points above the threshold
-        num_heavy_clusters_vec += np.sum(z_sample == i, axis = 0) > threshold
+        num_heavy_clusters_vec += \
+            (z_sample == i).reshape(-1, n_samples).sum(axis = 0) > threshold
 
     return np.mean(num_heavy_clusters_vec), np.var(num_heavy_clusters_vec)

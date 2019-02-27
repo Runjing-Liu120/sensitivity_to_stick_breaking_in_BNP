@@ -33,7 +33,7 @@ def get_stick_breaking_entropy(stick_propn_mean, stick_propn_info,
 
     assert np.all(gh_weights > 0)
 
-    assert len(stick_propn_mean) == len(stick_propn_info)
+    assert stick_propn_mean.shape == stick_propn_info.shape
     assert np.all(stick_propn_info) > 0
 
     e_log_v, e_log_1mv =\
@@ -107,7 +107,7 @@ def get_e_logitnorm_dp_prior(stick_propn_mean, stick_propn_info, alpha,
 
     assert np.all(gh_weights > 0)
 
-    assert len(stick_propn_mean) == len(stick_propn_info)
+    assert stick_propn_mean.shape == stick_propn_info.shape
     assert np.all(stick_propn_info) > 0
 
     e_log_v, e_log_1mv = \
@@ -159,7 +159,10 @@ def loglik_ind(stick_propn_mean, stick_propn_info, e_z, gh_loc, gh_weights):
 
     assert np.all(gh_weights > 0)
 
-    assert len(stick_propn_mean) == len(stick_propn_info)
+    assert stick_propn_mean.shape == stick_propn_info.shape
+    assert e_z.shape[0:-1] == stick_propn_info.shape[0:-1]
+    assert e_z.shape[-1] == stick_propn_info.shape[-1] + 1
+    
     assert np.all(stick_propn_info) > 0
 
 
