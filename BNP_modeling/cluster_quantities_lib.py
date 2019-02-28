@@ -140,11 +140,13 @@ def get_e_number_clusters_from_logit_sticks(stick_propn_mean, stick_propn_info,
         assert unv_norm_samples.shape == unif_samples_shape
 
     # sample sticks proportions from logitnormal
+    # this is n_samples x ... x (k_approx - 1)
     stick_propn_samples = sp.special.expit(unv_norm_samples * \
                             1 / np.sqrt(stick_propn_info) + \
                                         stick_propn_mean)
 
     # get posterior weights
+    # this is n_samples x ... x (k_approx - 1)
     weight_samples = \
         get_mixture_weights_from_stick_break_propns(stick_propn_samples)
 
@@ -187,8 +189,8 @@ def _get_clusters_from_ez_and_unif_samples(e_z_cumsum, unif_samples):
     n_obs = e_z_cumsum.shape[0]
 
     # unif_sample should be a matrix of shape n_obs x n_samples
-    assert len(unif_samples.shape) == 2
-    assert unif_samples.shape[0] == n_obs
+    # assert len(unif_samples.shape) == 2
+    # assert unif_samples.shape[0] == n_obs
 
     # get which cluster the sample belongs to
     # z_sample = (e_z_cumsum[:, :, None] > unif_samples[:, None, :]).argmax(-2)
