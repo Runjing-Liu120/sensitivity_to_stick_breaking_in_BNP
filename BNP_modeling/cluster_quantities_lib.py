@@ -133,11 +133,11 @@ def get_e_number_clusters_from_logit_sticks(stick_propn_mean, stick_propn_info,
     assert (n_samples is not None) or (unv_norm_samples is not None), \
         'both n_samples and unv_norm_samples cannot be None'
 
-    unif_samples_shape = (n_samples, ) + stick_propn_mean.shape
     if unv_norm_samples is None:
+        unif_samples_shape = (n_samples, ) + stick_propn_mean.shape
         unv_norm_samples = np.random.normal(0, 1, size = unif_samples_shape)
     if n_samples is None:
-        assert unv_norm_samples.shape == unif_samples_shape
+        assert unv_norm_samples.shape[1:] == stick_propn_mean.shape
 
     # sample sticks proportions from logitnormal
     # this is n_samples x ... x (k_approx - 1)
@@ -160,23 +160,19 @@ def get_e_number_clusters_from_logit_sticks(stick_propn_mean, stick_propn_info,
 
     return np.mean(np.sum(1 - subtr_weight, axis = -1), axis = 0).squeeze()
 
-
 def get_e_num_clusters_from_ez(e_z):
     """
-    Analytically computes the expected number of clusters from cluster
+    EAnalytically computes the expected number of clusters from cluster
     belongings e_z.
-
     Parameters
     ----------
     e_z : ndarray
         Array whose (n, k)th entry is the probability of the nth
         datapoint belonging to cluster k.
-
     Returns
     -------
     float
         The expected number of clusters in the dataset.
-
     """
 
     k = np.shape(e_z)[1]
@@ -189,13 +185,11 @@ def _get_clusters_from_ez_and_unif_samples(e_z_cumsum, unif_samples):
     n_obs = e_z_cumsum.shape[0]
 
     # unif_sample should be a matrix of shape n_obs x n_samples
-    # assert len(unif_samples.shape) == 2
-    # assert unif_samples.shape[0] == n_obs
+    assert len(unif_samples.shape) == 2
+    assert unif_samples.shape[0] == n_obs
 
     # get which cluster the sample belongs to
-    # z_sample = (e_z_cumsum[:, :, None] > unif_samples[:, None, :]).argmax(-2)
-    z_sample = (np.expand_dims(e_z_cumsum, axis = -1) >
-                np.expand_dims(unif_samples, axis = -2)).argmax(-2)
+    z_sample = (e_z_cumsum[:, :, None] > unif_samples[:, None, :]).argmax(1)
 
     return z_sample
 
@@ -207,11 +201,10 @@ def get_e_num_large_clusters_from_ez(e_z,
     """
     Computes the expected number of clusters with at least t
     observations from cluster belongings e_z.
-
     Parameters
     ----------
     e_z : ndarray
-        Array whose (..., k)th entry is the probability of the ...th
+        Array whose (n, k)th entry is the probability of the nth
         datapoint belonging to cluster k
     n_obs : int
         Number of observations in a dataset.
@@ -222,38 +215,35 @@ def get_e_num_large_clusters_from_ez(e_z,
         The user may pass in a precomputed array of uniform random variables
         on which the reparameterization trick is applied to compute the
         expected number of clusters.
-
     Returns
     -------
     float
         The expected number of clusters with at least ``threshold`` observations
         in a dataset the same size as e_z
-
     """
 
-    obs_shape = e_z.shape[0:-1]
-    n_clusters = e_z.shape[-1]
+    n_obs = e_z.shape[0]
+    n_clusters = e_z.shape[1]
 
     # draw uniform samples
     if unif_samples is None:
         assert n_samples is not None
-        unif_samples = np.random.random(obs_shape + (n_samples,))
+        unif_samples = np.random.random((n_obs, n_samples))
 
     else:
         assert unif_samples is not None
-        assert unif_samples.shape[0:-1] == obs_shape
+        assert unif_samples.shape[0] == n_obs
 
-    n_samples = unif_samples.shape[-1]
-    e_z_cumsum = np.cumsum(e_z, axis = -1)
+    n_samples = unif_samples.shape[1]
+    e_z_cumsum = np.cumsum(e_z, axis = 1)
 
     num_heavy_clusters_vec = np.zeros(n_samples)
 
-    # z_sample is a obs_shape x n_samples matrix of cluster belongings
+    # z_sample is a n_obs x n_samples matrix of cluster belongings
     z_sample = _get_clusters_from_ez_and_unif_samples(e_z_cumsum, unif_samples)
 
     for i in range(n_clusters):
         # get number of clusters with at least enough points above the threshold
-        num_heavy_clusters_vec += \
-            (z_sample == i).reshape(-1, n_samples).sum(axis = 0) > threshold
+        num_heavy_clusters_vec += np.sum(z_sample == i, axis = 0) > threshold
 
     return np.mean(num_heavy_clusters_vec), np.var(num_heavy_clusters_vec)
