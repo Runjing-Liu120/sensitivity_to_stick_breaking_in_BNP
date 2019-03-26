@@ -103,13 +103,13 @@ def precondition_and_optimize(get_loss, init_vb_free_params,
     # get preconditioned function
     precond_fun = paragami.PreconditionedFunction(get_loss)
     if hessian is None:
-        print('computing preconditioner ')
+        print('Computing Hessian to set preconditioner')
         t0 = time.time()
         _ = precond_fun.set_preconditioner_with_hessian(x = init_vb_free_params,
                                                             ev_min=1e-4)
         print('preconditioning time: {0:.2f}'.format(time.time() - t0))
     else:
-        print('setting preconditioner with hessian: ')
+        print('setting preconditioner with given Hessian: ')
         _ = precond_fun.set_preconditioner_with_hessian(hessian = hessian,
                                                             ev_min=1e-4)
 

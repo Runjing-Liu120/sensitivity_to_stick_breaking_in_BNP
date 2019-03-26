@@ -122,6 +122,15 @@ def get_e_logitnorm_dp_prior(stick_propn_mean, stick_propn_info, alpha,
 
 ##############
 # likelihoods
+def get_e_log_cluster_probabilities_from_e_log_stick(e_log_v, e_log_1mv):
+    zeros_shape = e_log_v.shape[0:-1] + (1,)
+
+    e_log_stick_remain = np.concatenate([np.zeros(zeros_shape), \
+                                        np.cumsum(e_log_1mv, axis = -1)], axis = -1)
+    e_log_new_stick = np.concatenate((e_log_v, np.zeros(zeros_shape)), axis = -1)
+
+    return (e_log_stick_remain + e_log_new_stick).squeeze()
+
 def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
                                         gh_loc, gh_weights):
 
@@ -144,13 +153,15 @@ def get_e_log_cluster_probabilities(stick_propn_mean, stick_propn_info,
             gh_loc = gh_loc,
             gh_weights = gh_weights)
 
-    zeros_shape = stick_propn_mean.shape[0:-1] + (1,)
+    return get_e_log_cluster_probabilities_from_e_log_stick(e_log_v, e_log_1mv)
 
-    e_log_stick_remain = np.concatenate([np.zeros(zeros_shape), \
-                                        np.cumsum(e_log_1mv, axis = -1)], axis = -1)
-    e_log_new_stick = np.concatenate((e_log_v, np.zeros(zeros_shape)), axis = -1)
-
-    return (e_log_stick_remain + e_log_new_stick).squeeze()
+    # zeros_shape = stick_propn_mean.shape[0:-1] + (1,)
+    #
+    # e_log_stick_remain = np.concatenate([np.zeros(zeros_shape), \
+    #                                     np.cumsum(e_log_1mv, axis = -1)], axis = -1)
+    # e_log_new_stick = np.concatenate((e_log_v, np.zeros(zeros_shape)), axis = -1)
+    #
+    # return (e_log_stick_remain + e_log_new_stick).squeeze()
 
 
 def loglik_ind(stick_propn_mean, stick_propn_info, e_z, gh_loc, gh_weights):

@@ -50,10 +50,10 @@ def get_mixture_weights_from_stick_break_propns(stick_break_propns):
 
 def get_e_cluster_probabilities(stick_propn_mean, stick_propn_info,
                                         gh_loc, gh_weights):
-    e_cluster_probs = \
+    e_stick_lengths = \
         ef.get_e_logitnormal(stick_propn_mean, stick_propn_info, gh_loc, gh_weights)
 
-    return get_mixture_weights_from_stick_break_propns(e_cluster_probs)
+    return get_mixture_weights_from_stick_break_propns(e_stick_lengths)
 
 def get_stick_break_propns_from_mixture_weights(mixture_weights):
     """
