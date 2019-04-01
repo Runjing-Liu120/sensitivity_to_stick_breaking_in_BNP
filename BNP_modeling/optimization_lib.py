@@ -69,7 +69,8 @@ def run_bfgs(get_loss, init_vb_free_params,
 
 def precondition_and_optimize(get_loss, init_vb_free_params,
                                 maxiter = 10, gtol = 1e-8,
-                                hessian = None):
+                                hessian = None,
+                                preconditioner = None):
     """
     Finds a preconditioner at init_vb_free_params, and then
     runs trust Newton conjugate gradient to find the optimal
@@ -102,18 +103,24 @@ def precondition_and_optimize(get_loss, init_vb_free_params,
 
     # get preconditioned function
     precond_fun = paragami.PreconditionedFunction(get_loss)
-    if hessian is None:
+    if (hessian is None) and (preconditioner is None):
         print('Computing Hessian to set preconditioner')
         t0 = time.time()
         _ = precond_fun.set_preconditioner_with_hessian(x = init_vb_free_params,
                                                             ev_min=1e-4)
         print('preconditioning time: {0:.2f}'.format(time.time() - t0))
-    else:
+    elif (hessian is not None):
+        assert preconditioner is None, 'can only specify one of hessian or preconditioner'
         print('setting preconditioner with given Hessian: ')
         _ = precond_fun.set_preconditioner_with_hessian(hessian = hessian,
                                                             ev_min=1e-4)
-
-
+    elif (preconditioner is not None):
+        assert hessian is None, 'can only specify one of hessian or preconditioner'
+        print('setting with given preconditioner: ')
+        # preconditioner should be a tuple, where the first entry of preconditioner
+        # is the preconditioner; the second entry is its optional inverse
+        # it is (a, a_inv) in the notation of paragami.optimization_lib
+        precond_fun.set_preconditioner_matrix(preconditioner[0], preconditioner[1])
 
     # optimize
     get_loss_precond_objective = OptimizationObjective(precond_fun)
