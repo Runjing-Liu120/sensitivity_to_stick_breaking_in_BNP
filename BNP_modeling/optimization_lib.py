@@ -4,18 +4,25 @@ import autograd.scipy as sp
 
 from scipy import optimize
 
-from sklearn.cluster import KMeans
-
 from copy import deepcopy
 
 import paragami
 
-##########################
-# Optimization functions
-##########################
+import autograd
+import autograd.numpy as np
+import autograd.scipy as sp
+
+from scipy import optimize
+
+from copy import deepcopy
+
+import paragami
+from paragami import OptimizationObjective
+
+import time
+
 
 def run_bfgs(get_loss, init_vb_free_params,
-                    get_loss_grad =  None,
                     maxiter = 10, gtol = 1e-8):
 
     """
@@ -46,15 +53,13 @@ def run_bfgs(get_loss, init_vb_free_params,
         The OptimizeResult class from returned by scipy.optimize.minimize.
 
     """
-
-    if get_loss_grad is None:
-        get_loss_grad = autograd.grad(get_loss)
+    get_loss_objective = OptimizationObjective(get_loss)
 
     # optimize
     bfgs_output = optimize.minimize(
-            get_loss,
+            get_loss_objective.f,
             x0=init_vb_free_params,
-            jac=get_loss_grad,
+            jac=get_loss_objective.grad,
             method='BFGS',
             options={'maxiter': maxiter, 'disp': True, 'gtol': gtol})
 
@@ -63,7 +68,9 @@ def run_bfgs(get_loss, init_vb_free_params,
     return bfgs_vb_free_params, bfgs_output
 
 def precondition_and_optimize(get_loss, init_vb_free_params,
-                                maxiter = 10, gtol = 1e-8):
+                                maxiter = 10, gtol = 1e-8,
+                                hessian = None,
+                                preconditioner = None):
     """
     Finds a preconditioner at init_vb_free_params, and then
     runs trust Newton conjugate gradient to find the optimal
@@ -95,19 +102,35 @@ def precondition_and_optimize(get_loss, init_vb_free_params,
     """
 
     # get preconditioned function
-    print('computing preconditioner ')
     precond_fun = paragami.PreconditionedFunction(get_loss)
-    _ = precond_fun.set_preconditioner_with_hessian(x = init_vb_free_params,
-                                                        ev_min=1e-4)
+    if (hessian is None) and (preconditioner is None):
+        print('Computing Hessian to set preconditioner')
+        t0 = time.time()
+        _ = precond_fun.set_preconditioner_with_hessian(x = init_vb_free_params,
+                                                            ev_min=1e-4)
+        print('preconditioning time: {0:.2f}'.format(time.time() - t0))
+    elif (hessian is not None):
+        assert preconditioner is None, 'can only specify one of hessian or preconditioner'
+        print('setting preconditioner with given Hessian: ')
+        _ = precond_fun.set_preconditioner_with_hessian(hessian = hessian,
+                                                            ev_min=1e-4)
+    elif (preconditioner is not None):
+        assert hessian is None, 'can only specify one of hessian or preconditioner'
+        print('setting with given preconditioner: ')
+        # preconditioner should be a tuple, where the first entry of preconditioner
+        # is the preconditioner; the second entry is its optional inverse
+        # it is (a, a_inv) in the notation of paragami.optimization_lib
+        precond_fun.set_preconditioner_matrix(preconditioner[0], preconditioner[1])
 
     # optimize
+    get_loss_precond_objective = OptimizationObjective(precond_fun)
     print('running newton steps')
     trust_ncg_output = optimize.minimize(
                             method='trust-ncg',
                             x0=precond_fun.precondition(init_vb_free_params),
-                            fun=precond_fun,
-                            jac=autograd.grad(precond_fun),
-                            hessp=autograd.hessian_vector_product(precond_fun),
+                            fun=get_loss_precond_objective.f,
+                            jac=get_loss_precond_objective.grad,
+                            hessp=get_loss_precond_objective.hessian_vector_product,
                             options={'maxiter': maxiter, 'disp': True, 'gtol': gtol})
 
     # Uncondition
@@ -118,7 +141,8 @@ def precondition_and_optimize(get_loss, init_vb_free_params,
 def optimize_full(get_loss, init_vb_free_params,
                     bfgs_max_iter = 50, netwon_max_iter = 50,
                     max_precondition_iter = 10,
-                    gtol=1e-8, ftol=1e-8, xtol=1e-8):
+                    gtol=1e-8, ftol=1e-8, xtol=1e-8,
+                    init_hessian = None):
     """
     Finds the optimal variational free parameters of using a combination of
     BFGS and Newton trust region conjugate gradient.
@@ -158,27 +182,34 @@ def optimize_full(get_loss, init_vb_free_params,
 
     """
 
-    # compute the gradient
     get_loss_grad = autograd.grad(get_loss)
 
     # run a few steps of bfgs
-    print('running bfgs ... ')
-    bfgs_vb_free_params, bfgs_ouput = run_bfgs(get_loss,
-                                init_vb_free_params,
-                                maxiter = bfgs_max_iter, gtol = gtol)
-    x = bfgs_vb_free_params
-    f_val = get_loss(x)
+    if bfgs_max_iter > 0:
+        print('running bfgs ... ')
+        bfgs_vb_free_params, bfgs_ouput = run_bfgs(get_loss,
+                                    init_vb_free_params,
+                                    maxiter = bfgs_max_iter,
+                                    gtol = gtol)
+        x = bfgs_vb_free_params
+        f_val = get_loss(x)
 
-    if bfgs_ouput.success:
+        bfgs_success = bfgs_ouput.success
+    else:
+        bfgs_success = False
+        x = init_vb_free_params
+        f_val = get_loss(x)
+
+    if bfgs_success:
         print('bfgs converged. Done. ')
         return x
-
     else:
         # if bfgs did not converge, we precondition and run newton trust region
         for i in range(max_precondition_iter):
             print('\n running preconditioned newton; iter = ', i)
             new_x, ncg_output = precondition_and_optimize(get_loss, x,\
-                                        maxiter = netwon_max_iter, gtol = gtol)
+                                        maxiter = netwon_max_iter, gtol = gtol,
+                                        hessian = init_hessian)
 
             # Check convergence.
             new_f_val = get_loss(new_x)

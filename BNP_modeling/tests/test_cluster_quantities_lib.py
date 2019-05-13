@@ -14,6 +14,7 @@ import numpy.testing as testing
 class TestClusteringSamples(unittest.TestCase):
     def test_sampling_clusters_from_uniform(self):
         # check the sampling of _get_clusters_from_ez_and_unif_samples
+        # checks that empirical average matches e_z
         np.random.seed(24524)
 
         # cluster belonging probabilities
