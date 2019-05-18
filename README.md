@@ -8,4 +8,6 @@ See also, `vittles`, a library for sensitivity analysis in optimization problems
 which is used in the code here. 
 
 To install the functions in BNP_modeling, run 
-'pip install ./'
+`pip install ./`. 
+
+and see `./GMM_modeling/` to reproduce the results of our paper. 
