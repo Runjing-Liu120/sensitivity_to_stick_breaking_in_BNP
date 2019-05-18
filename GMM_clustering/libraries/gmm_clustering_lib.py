@@ -4,8 +4,8 @@ import autograd.scipy as sp
 
 import sys
 sys.path.insert(0, '../../BNP_modeling/')
-import cluster_quantities_lib as cluster_lib
-import modeling_lib
+import BNP_modeling.cluster_quantities_lib as cluster_lib
+import BNP_modeling.modeling_lib as modeling_lib
 
 import paragami
 
